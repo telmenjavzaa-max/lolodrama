@@ -1,4 +1,4 @@
-// Kinoondoo — QPay төлбөрийн функц
+// Lolo Drama — QPay төлбөрийн функц
 // POST {action:"create", plan: plans.code, movie_id?}  → нэхэмжлэх + QR
 // POST {action:"check", payment_id}                         → төлөв шалгах
 // GET/POST ?callback=1&payment_id=...                         → QPay-ийн callback
@@ -96,7 +96,7 @@ async function sendCapiPurchase(paymentId: string) {
   if (p.client_ua) ud.client_user_agent = p.client_ua;
   const body = { data: [{
     event_name: "Purchase", event_time: Math.floor(new Date(p.paid_at || Date.now()).getTime() / 1000), event_id: p.id,
-    action_source: "website", event_source_url: Deno.env.get("SITE_URL") || "https://kinoondoo.com/", user_data: ud,
+    action_source: "website", event_source_url: Deno.env.get("SITE_URL") || "https://lolodrama.mn/", user_data: ud,
     custom_data: { currency: "MNT", value: Number(p.amount) || 0, content_ids: [p.movie_id ? String(p.movie_id) : p.plan_code], content_type: "product" },
   }] };
   const r = await fetch(`https://graph.facebook.com/v21.0/${pixel}/events?access_token=${encodeURIComponent(token)}`, {
@@ -151,7 +151,7 @@ Deno.serve(async (req: Request) => {
       // Туршилтын event (test_event_code-той тул зарын статистикт орохгүй)
       const r = await fetch(`https://graph.facebook.com/v21.0/${pixel}/events?access_token=${encodeURIComponent(token)}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ test_event_code: "TEST" + new Date().toISOString().slice(0, 10).replace(/-/g, ""), data: [{ event_name: "PageView", event_time: Math.floor(Date.now() / 1000), action_source: "website", event_source_url: Deno.env.get("SITE_URL") || "https://kinoondoo.com/", user_data: { external_id: [await sha256("capi-check")], client_user_agent: "capi-check" } }] }),
+        body: JSON.stringify({ test_event_code: "TEST" + new Date().toISOString().slice(0, 10).replace(/-/g, ""), data: [{ event_name: "PageView", event_time: Math.floor(Date.now() / 1000), action_source: "website", event_source_url: Deno.env.get("SITE_URL") || "https://lolodrama.mn/", user_data: { external_id: [await sha256("capi-check")], client_user_agent: "capi-check" } }] }),
       });
       const j = await r.json().catch(() => ({}));
       return json({ capi: r.ok ? "ok" : "error", received: j.events_received ?? null, error: j.error?.message || null }, r.ok ? 200 : 502);
@@ -175,14 +175,14 @@ Deno.serve(async (req: Request) => {
 
       let movieId: number | null = null;
       let amount = plan.amount as number;
-      let description = `Kinoondoo — ${plan.title}`;
+      let description = `Lolo Drama — ${plan.title}`;
       if (plan.kind === "rent") {
         movieId = Number(body.movie_id);
         if (!Number.isInteger(movieId)) return json({ error: "Кино сонгоно уу" }, 400);
         const [movie] = await db(`movies?id=eq.${movieId}&published=eq.true&select=id,title,rent_price`);
         if (!movie) return json({ error: "Кино олдсонгүй" }, 404);
         amount = movie.rent_price || amount;
-        description = `Kinoondoo — ${movie.title} (${plan.hours} цаг)`;
+        description = `Lolo Drama — ${movie.title} (${plan.hours} цаг)`;
       }
 
       const acct = 1; // зөвхөн захиалагчийн нэг QPay merchant

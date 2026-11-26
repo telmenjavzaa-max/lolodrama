@@ -1,4 +1,4 @@
-// Kinoondoo — Bunny Stream "Embed token authentication" холбоосыг серверт гарын үсэглэх
+// Lolo Drama — Bunny Stream "Embed token authentication" холбоосыг серверт гарын үсэглэх
 // POST {url} (Authorization: хэрэглэгчийн JWT) → { url: ".../embed/LIB/VID?token=...&expires=..." }
 // Хэрэглэгч тухайн видеог үзэх эрхтэй (RLS) эсвэл энэ нь нийтэд нээлттэй трейлер бол л гарын үсэг зурна.
 // Secret: BUNNY_TOKEN_KEY — Bunny → Stream → Library → Security → "Token authentication key"
