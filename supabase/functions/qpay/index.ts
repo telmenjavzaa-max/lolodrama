@@ -87,13 +87,14 @@ async function sendCapiPurchase(paymentId: string) {
   const token = Deno.env.get("META_CAPI_TOKEN");
   const pixel = Deno.env.get("META_PIXEL_ID") || "";
   if (!token || !pixel) return;
-  const [p] = await db(`payments?id=eq.${paymentId}&select=id,user_id,amount,plan_code,movie_id,paid_at,fbp,fbc,client_ua`);
+  const [p] = await db(`payments?id=eq.${paymentId}&select=id,user_id,amount,plan_code,movie_id,paid_at,fbp,fbc,client_ua,client_ip`);
   if (!p) return;
   // Хувийн мэдээлэл (имэйл, утас) илгээхгүй — зөвхөн кодолсон дотоод ID + Facebook cookie
   const ud: Record<string, unknown> = { external_id: [await sha256(p.user_id)] };
   if (p.fbp) ud.fbp = p.fbp;
   if (p.fbc) ud.fbc = p.fbc;
   if (p.client_ua) ud.client_user_agent = p.client_ua;
+  if (p.client_ip) ud.client_ip_address = p.client_ip; // Pixel-ийн IP-тэй таарах (хэрэглэгч зөвшөөрсөн, 2026-11-26)
   const body = { data: [{
     event_name: "Purchase", event_time: Math.floor(new Date(p.paid_at || Date.now()).getTime() / 1000), event_id: p.id,
     action_source: "website", event_source_url: Deno.env.get("SITE_URL") || "https://lolodrama.mn/", user_data: ud,
@@ -126,6 +127,13 @@ async function verifyAndGrant(payment: { id: string; amount: number; status: str
     return "paid";
   }
   return "pending";
+}
+
+// Хэрэглэгчийн IP (Meta CAPI-д Pixel-тэй таарах)
+function clientIp(req: Request) {
+  const raw = req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || (req.headers.get("x-forwarded-for") || "").split(",")[0];
+  const ip = (raw || "").trim();
+  return /^[0-9a-fA-F:.]{3,45}$/.test(ip) ? ip : null;
 }
 
 const lastCheck = new Map<string, number>();
@@ -193,6 +201,7 @@ Deno.serve(async (req: Request) => {
           fbp: /^fb\.\d\.\d+\.\d+$/.test(String(body.fbp || "")) ? body.fbp : null,
           fbc: /^fb\.\d\.\d+\.[\w-]{1,500}$/.test(String(body.fbc || "")) ? body.fbc : null,
           client_ua: (req.headers.get("user-agent") || "").slice(0, 400) || null,
+          client_ip: clientIp(req),
         }),
       });
 
